@@ -98,7 +98,254 @@ Java不是动态语言，但Java可以称之为“准动态语言”。即Java�
 
 
 
+### 获得反射对象
+
+Java反射机制提供的功能：
+
+* 在运行时判断任意一个对象所属的类
+
+* 在运行时构造任意一个类的对象
+
+* 在运行时判断任意一个类所具有的成员变量和方法
+
+* 在运行时获取泛型信息
+
+* 在运行时调用任意一个对象的成员变量和方法
+
+* 在运行时处理注解
+
+* 生成动态代理
+
+* 等等
 
 
 
+反射的优缺点：
+
+优点：可以实现动态创建对象和编译，体现出很大的灵活性
+
+缺点：对性能有影响。使用反射基本上是一种解释操作，我们可以告诉JVM，我们希望做什么并且它满足我们的要求。这类操作总是慢于
+
+直接执行相同的操作。
+
+
+
+```java
+package com.dantalian.reflection;
+
+// 反射
+public class Test01 {
+    public static void main(String[] args) throws ClassNotFoundException {
+        // 通过反射获取类的 Class 对象
+        Class<?> c1 = Class.forName("com.dantalian.reflection.User");
+        System.out.println(c1);
+
+        Class<?> c2 = Class.forName("com.dantalian.reflection.User");
+        Class<?> c3 = Class.forName("com.dantalian.reflection.User");
+        Class<?> c4 = Class.forName("com.dantalian.reflection.User");
+
+        // 一个类在内存中只有一个 Class 对象
+        // 一个类被加载后，类的整个结构都会被封装在 Class 对象中
+        System.out.println(c2.hashCode());
+        System.out.println(c3.hashCode());
+        System.out.println(c4.hashCode());
+    }
+}
+
+// 实体类
+class User{
+    private String name;
+    private int id;
+    private int age;
+    
+    public User() {
+    }
+
+    public User(String name, int id, int age) {
+        this.name = name;
+        this.id = id;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "name='" + name + '\'' +
+                ", id=" + id +
+                ", age=" + age +
+                '}';
+    }
+}
+```
+
+
+
+### 得到 Class 对象的几种方式
+
+**Class 类**，对象照镜子后可以得到的信息:某个类的属性、方法和构造器、某个类到底实现了哪些接口。对于每个类而言，JRE都为其保留一个不变的Class类型的对象。一个Class对象包含了特定某个结构（classlinterface/enum/annotation/primitive type/void/[]）的有关信息。
+
+* Class本身也是一个类
+* Class对象只能由系统建立对象
+* 一个加载的类在JVM中只会有一个Class实例
+* 一个Class对象对应的是一个加载到JVM中的一个.class文件
+* 每个类的实例都会记得自己是由哪个Class 实例所生成
+* 通过Class可以完整地得到一个类中的所有被加载的结构
+* Class类是Reflection的根源，针对任何你想动态加载、运行的类，唯有先获得相应的Class对象
+
+
+
+获取 Class 类的实例
+
+* 若已知具体的类，通过类的class属性获取，该方法最为安全可靠，程序性能最高。
+
+​		`Class clazz= Person.class;`
+
+* 已知某个类的实例，调用该实例的getClass()方法获取Class对象
+
+​		`Class clazz = person.getClass();`
+
+* 已知一个类的全类名，且该类在类路径下，可通过Class类的静态方法forName()获取，可能抛出ClassNotFoundException
+
+​		`Class clazz= Class.forName("demo01.Student");`
+
+* 内置基本数据类型可以直接用类名.Type
+
+* 还可以利用ClassLoader我们之后讲解
+
+```java
+// 测试 Class类的创建方式
+public class Test02 {
+
+    public static void main(String[] args) throws ClassNotFoundException {
+        Person person = new Student();
+        System.out.println("这个人是：" + person.name);
+
+        // 1、通过对象
+        Class c1 = person.getClass();
+        System.out.println(c1.hashCode());
+
+        // 2、通过 forName
+        Class c2 = Class.forName("com.dantalian.reflection.Student");
+        System.out.println(c2.hashCode());
+
+        // 3、通过 类名.class
+        Class c3 = Student.class;
+        System.out.println(c3.hashCode());
+
+        // 4、基本内置类型的包装类都有一个 Type属性
+        Class c4 = Integer.TYPE;
+        System.out.println(c4);
+
+        // 获得父类类型
+        Class c5 = c1.getSuperclass();
+        System.out.println(c5);
+    }
+}
+
+class Person{
+    public String name;
+
+    public Person() {
+    }
+
+    public Person(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "name='" + name + '\'' +
+                '}';
+    }
+}
+
+class Student extends Person{
+    public Student() {
+        this.name = "学生";
+    }
+}
+class Teacher extends Person{
+    public Teacher() {
+        this.name = "老师";
+    }
+}
+```
+
+
+
+### 所有类型的 Class 对象
+
+哪些类型可以有Class对象?
+
+* class:外部类，成员（成员内部类，静态内部类），局部内部类，匿名内部类
+
+* interface:接口
+
+* []:数组
+
+* enum:枚举
+* annotation:注解@interface
+* primitive type:基本数据类型void
+
+```java
+// 所有类型的 Class
+public class Test03 {
+    public static void main(String[] args) {
+        Class c1 = Object.class;    // 类
+        Class c2 = Comparable.class;    // 接口
+        Class c3 = String[].class;  // 一维数组
+        Class c4 = int[][].class;   // 二维数组
+        Class c5 = Override.class;  // 注解
+        Class c6 = ElementType.class;   // 枚举
+        Class c7 = Integer.class;   // 基本数据类型
+        Class c8 = void.class;  // void
+        Class c9 = Class.class; // Class
+
+        System.out.println(c1);
+        System.out.println(c2);
+        System.out.println(c3);
+        System.out.println(c4);
+        System.out.println(c5);
+        System.out.println(c6);
+        System.out.println(c7);
+        System.out.println(c8);
+        System.out.println(c9);
+
+        // 只要元素类型与维度一样，就是同一个 Class
+        int[] a = new int[10];
+        int[] b = new int[100];
+        System.out.println(a.getClass().hashCode());
+        System.out.println(b.getClass().hashCode());
+    }
+}
+```
+
+
+
+### 类加载内存分析
 
